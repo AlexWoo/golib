@@ -1,6 +1,6 @@
 // Copyright (C) AlexWoo(Wu Jie) wj19840501@gmail.com
 //
-// Timer
+// golib timer
 
 package golib
 
@@ -8,7 +8,15 @@ import (
 	"time"
 )
 
-// go lib timer struct, use NewTimer to create
+// go lib timer struct, use NewTimer to create.
+// handler will execute after 1 second in example below
+//
+//	func handler(p interface{}) {
+//		i := p.(int)
+//		fmt.Println(i)
+//	}
+//
+//	timer := golib.NewTimer(1 * time.Second, handler, 10)
 type Timer struct {
 	timer   *time.Timer
 	quit    chan bool
