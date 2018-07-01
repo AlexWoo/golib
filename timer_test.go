@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"."
+	"golib"
 )
 
 func TestNilStop(t *testing.T) {
