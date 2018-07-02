@@ -15,6 +15,7 @@ type Size int64
 const step = 1024
 
 // To conver integer number of units to a Size, multiply:
+//
 //	size := 10
 //	fmt.Println(golib.Size(size)*golib.MByte) // prints 10Mbyte
 const (
@@ -42,6 +43,7 @@ var unitMap = map[string]int64{
 
 var unitBase = []string{"B", "K", "M", "G", "T", "P"}
 
+// Convert Size type to string
 func (s Size) String() string {
 	ret := int64(s)
 	base := 0
@@ -63,6 +65,7 @@ func (s Size) String() string {
 	return strconv.FormatInt(int64(ret), 10) + unitBase[base]
 }
 
+// Convert string to Size type
 func ParseSize(s string) (Size, error) {
 	if s == "" {
 		return 0, errors.New("null string")
