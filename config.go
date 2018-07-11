@@ -194,11 +194,24 @@ func confTimeDuration(value string, defaultVal time.Duration) time.Duration {
 // Reflect ini config into struct
 //
 // Example:
+//
 // test.ini:
 //	[Config]
 //	cstring = Hello World
 //
-// parse test.ini:
+// Parse test.ini:
+//	const (
+//		T1 = iota
+//		T2
+//		T3
+//	)
+//
+//	var enumT = golib.Enum{
+//		"T1": T1,
+//		"T2": T2,
+//		"T3": T3,
+//	}
+//
 //	type Config struct {
 //		CBool     bool `default:"true"`
 //		CString   string
@@ -209,8 +222,8 @@ func confTimeDuration(value string, defaultVal time.Duration) time.Duration {
 //		CEnum     string        `default:"T2"`
 //	}
 //
-//	func TestConfig(t *testing.T) {
-//		f, err := ini.Load("test/test.ini")
+//	func main() {
+//		f, err := ini.Load("test.ini")
 //		if err != nil {
 //			fmt.Println("Load test.ini failed", err)
 //			return
@@ -224,6 +237,9 @@ func confTimeDuration(value string, defaultVal time.Duration) time.Duration {
 //
 //		fmt.Println(config)
 //	}
+//
+// Result:
+//	&{true Hello World 100 -100 10M 20s T2}
 func Config(f *ini.File, secName string, it interface{}) bool {
 	if secName == "DEFAULT" {
 		secName = ""
