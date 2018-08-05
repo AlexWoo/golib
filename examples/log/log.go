@@ -5,28 +5,28 @@ import (
 	"golib"
 )
 
-type mainLogHandle struct {
+type mainCtx struct {
 }
 
-func (h *mainLogHandle) Prefix() string {
+func (h *mainCtx) Prefix() string {
 	return "[main]"
 }
 
-func (h *mainLogHandle) Suffix() string {
+func (h *mainCtx) Suffix() string {
 	return "[END]"
 }
 
 func main() {
-	h := &mainLogHandle{}
-	logger := golib.NewLog(h, "test.log", golib.LOGINFO)
+	h := &mainCtx{}
+	logger := golib.NewLog("test.log", golib.LOGINFO)
 	if logger == nil {
-		fmt.Println("NewLog failed")
+		fmt.Println(h, "NewLog failed")
 	}
 
-	logger.LogDebug("test debug")
-	logger.LogInfo("test info")
-	logger.LogError("test error")
-	logger.LogFatal("test fatal")
+	logger.LogDebug(h, "test debug")
+	logger.LogInfo(h, "test info")
+	logger.LogError(h, "test error")
+	logger.LogFatal(h, "test fatal")
 
-	logger.LogError("Normal End")
+	logger.LogError(h, "Normal End")
 }

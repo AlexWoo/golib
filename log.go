@@ -32,8 +32,8 @@ var LoglvEnum = Enum{
 	"fatal": LOGFATAL,
 }
 
-// LogHandle for user defined prefix and suffix add in log
-type LogHandle interface {
+// LogCtx for user defined prefix and suffix add in log
+type LogCtx interface {
 	Prefix() string
 	Suffix() string
 }
@@ -42,30 +42,30 @@ type LogHandle interface {
 // Example:
 //
 // New a logger and start log:
-//	type mainLogHandle struct {
+//	type mainCtx struct {
 //	}
 //
-//	func (h *mainLogHandle) Prefix() string {
+//	func (h *mainCtx) Prefix() string {
 //		return "[main]"
 //	}
 //
-//	func (h *mainLogHandle) Suffix() string {
+//	func (h *mainCtx) Suffix() string {
 //		return "[END]"
 //	}
 //
 //	func main() {
-//		h := &mainLogHandle{}
-//		logger := golib.NewLog(h, "test.log", golib.LOGINFO)
+//		h := &mainCtx{}
+//		logger := golib.NewLog("test.log", golib.LOGINFO)
 //		if logger == nil {
 //			fmt.Println("NewLog failed")
 //		}
 //
-//		logger.LogDebug("test debug")
-//		logger.LogInfo("test info")
-//		logger.LogError("test error")
-//		logger.LogFatal("test fatal")
+//		logger.LogDebug(h, "test debug")
+//		logger.LogInfo(h, "test info")
+//		logger.LogError(h, "test error")
+//		logger.LogFatal(h, "test fatal")
 //
-//		logger.LogError("Normal End")
+//		logger.LogError(h, "Normal End")
 //	}
 //
 // Result in test.log:
@@ -77,17 +77,15 @@ type Log struct {
 	path   string
 	level  int
 	logger *log.Logger
-	handle LogHandle
 }
 
-func (l *Log) logPrintf(loglv int, format string, v ...interface{}) {
-	format = logLevel[loglv] + l.handle.Prefix() + " " + format +
-		" " + l.handle.Suffix()
+func (l *Log) logPrintf(loglv int, c LogCtx, format string, v ...interface{}) {
+	format = logLevel[loglv] + c.Prefix() + " " + format + " " + c.Suffix()
 	l.logger.Printf(format, v...)
 }
 
 // New golib log instance
-func NewLog(handle LogHandle, logPath string, logLevel int) *Log {
+func NewLog(logPath string, logLevel int) *Log {
 	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		return nil
@@ -96,7 +94,6 @@ func NewLog(handle LogHandle, logPath string, logLevel int) *Log {
 	l := &Log{
 		path:   logPath,
 		level:  logLevel,
-		handle: handle,
 		logger: log.New(f, "", log.LstdFlags|log.Lmicroseconds|log.LUTC),
 	}
 
@@ -104,34 +101,34 @@ func NewLog(handle LogHandle, logPath string, logLevel int) *Log {
 }
 
 // log a debug level log
-func (l *Log) LogDebug(format string, v ...interface{}) {
+func (l *Log) LogDebug(c LogCtx, format string, v ...interface{}) {
 	if l.level > LOGDEBUG {
 		return
 	}
 
-	l.logPrintf(LOGDEBUG, format, v...)
+	l.logPrintf(LOGDEBUG, c, format, v...)
 }
 
 // log a info level log
-func (l *Log) LogInfo(format string, v ...interface{}) {
+func (l *Log) LogInfo(c LogCtx, format string, v ...interface{}) {
 	if l.level > LOGINFO {
 		return
 	}
 
-	l.logPrintf(LOGINFO, format, v...)
+	l.logPrintf(LOGINFO, c, format, v...)
 }
 
 // log a error level log
-func (l *Log) LogError(format string, v ...interface{}) {
+func (l *Log) LogError(c LogCtx, format string, v ...interface{}) {
 	if l.level > LOGERROR {
 		return
 	}
 
-	l.logPrintf(LOGERROR, format, v...)
+	l.logPrintf(LOGERROR, c, format, v...)
 }
 
 // log a error level log, and exit
-func (l *Log) LogFatal(format string, v ...interface{}) {
-	l.logPrintf(LOGFATAL, format, v...)
+func (l *Log) LogFatal(c LogCtx, format string, v ...interface{}) {
+	l.logPrintf(LOGFATAL, c, format, v...)
 	os.Exit(1)
 }
