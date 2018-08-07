@@ -80,8 +80,19 @@ type Log struct {
 }
 
 func (l *Log) logPrintf(loglv int, c LogCtx, format string, v ...interface{}) {
-	format = logLevel[loglv] + c.Prefix() + " " + format + " " + c.Suffix()
-	l.logger.Printf(format, v...)
+	prefix := c.Prefix()
+	suffix := c.Suffix()
+
+	fmt := logLevel[loglv]
+	if prefix != "" {
+		fmt += prefix + " "
+	}
+	fmt += format
+	if suffix != "" {
+		fmt += " " + suffix
+	}
+
+	l.logger.Printf(fmt, v...)
 }
 
 // New golib log instance
