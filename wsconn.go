@@ -5,7 +5,6 @@
 package golib
 
 import (
-	"fmt"
 	"net"
 	"strings"
 	"sync"
@@ -19,6 +18,10 @@ type Conn interface {
 	Accept()
 	Send(data []byte)
 	Close()
+
+	// for log ctx
+	Prefix() string
+	Suffix() string
 }
 
 // Webscoket Connection, support websocket channel reuse with same name,
@@ -34,6 +37,7 @@ type WSConn struct {
 	reconnect   chan bool
 	quit        chan bool
 	buf         []byte
+	log         *Log
 	handler     func(c Conn, data []byte)
 }
 
@@ -62,7 +66,7 @@ func (c *WSConn) connect() bool {
 			return true
 		}
 
-		fmt.Println(time.Now(), "------ connect err: ", err)
+		c.log.LogError(c, "connect err: %s", err)
 
 		if websocket.IsCloseError(err) {
 			e := err.(*websocket.CloseError)
@@ -74,8 +78,6 @@ func (c *WSConn) connect() bool {
 					continue
 				}
 			}
-
-			fmt.Println(e.Code)
 		} else {
 			e, ok := err.(net.Error)
 			if ok {
@@ -100,7 +102,7 @@ func (c *WSConn) read() {
 			continue
 		}
 
-		fmt.Println(time.Now(), "------ read err: ", err)
+		c.log.LogError(c, "read err: %s", err)
 
 		c.recvq <- []byte{}
 
@@ -115,7 +117,7 @@ func (c *WSConn) write(data []byte) bool {
 		return true
 	}
 
-	fmt.Println(time.Now(), "------ write err: ", err)
+	c.log.LogError(c, "write err: %s", err)
 
 	c.buf = data
 
@@ -163,7 +165,7 @@ func (c *WSConn) dial() {
 		if !c.connect() {
 			return
 		}
-		fmt.Println(time.Now(), "------ connect successd")
+		c.log.LogInfo(c, "connect successd")
 
 		for {
 			select {
@@ -171,7 +173,7 @@ func (c *WSConn) dial() {
 				if !c.connect() {
 					return
 				}
-				fmt.Println(time.Now(), "------ reconnect successd")
+				c.log.LogInfo(c, "reconnect successd")
 			case <-c.quit:
 				c.conn.Close()
 				return
@@ -189,7 +191,8 @@ func (c *WSConn) dial() {
 // qsize is send and receive channel size.
 // handler is callback function when websocket client receive data
 func NewWSClient(name string, url string, connTimeout time.Duration,
-	maxRetries int, qsize uint64, handler func(c Conn, data []byte)) *WSConn {
+	maxRetries int, qsize uint64, handler func(c Conn, data []byte),
+	log *Log) *WSConn {
 
 	if !strings.HasPrefix(url, "ws://") && !strings.HasPrefix(url, "wss://") {
 		return nil
@@ -212,6 +215,7 @@ func NewWSClient(name string, url string, connTimeout time.Duration,
 		recvq:       make(chan []byte, qsize),
 		reconnect:   make(chan bool),
 		quit:        make(chan bool, 1),
+		log:         log,
 		handler:     handler,
 	}
 	wsconns[name] = conn
@@ -229,7 +233,7 @@ func NewWSClient(name string, url string, connTimeout time.Duration,
 // qsize is send and receive channel size.
 // handler is callback function when websocket server receive data
 func NewWSServer(name string, c *websocket.Conn, qsize uint64,
-	handler func(c Conn, data []byte)) *WSConn {
+	handler func(c Conn, data []byte), log *Log) *WSConn {
 
 	wsconnsLock.Lock()
 
@@ -244,6 +248,7 @@ func NewWSServer(name string, c *websocket.Conn, qsize uint64,
 			recvq:     make(chan []byte, qsize),
 			reconnect: make(chan bool),
 			quit:      make(chan bool, 1),
+			log:       log,
 			handler:   handler,
 		}
 		wsconns[name] = conn
@@ -282,4 +287,21 @@ func (c *WSConn) Close() {
 	wsconnsLock.Unlock()
 
 	c.quit <- true
+}
+
+func (c *WSConn) Prefix() string {
+	return "[websocket]"
+}
+
+func (c *WSConn) Suffix() string {
+	suf := ", Websocket[" + c.name + "]"
+	if c.url != "" { // websocket client
+		suf += " Url: " + c.url + " Client: " + c.conn.LocalAddr().String() +
+			" Server: " + c.conn.RemoteAddr().String()
+	} else {
+		suf += " Client: " + c.conn.RemoteAddr().String() +
+			" Server: " + c.conn.LocalAddr().String()
+	}
+
+	return suf
 }
