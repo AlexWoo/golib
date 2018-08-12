@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"golib"
 	"time"
-
-	"github.com/go-ini/ini"
 )
 
 const (
@@ -31,15 +29,10 @@ type Config struct {
 }
 
 func main() {
-	f, err := ini.Load("test.ini")
-	if err != nil {
-		fmt.Println("Load test.ini failed", err)
-		return
-	}
-
 	config := &Config{}
-	if !golib.Config(f, "Config", config) {
-		fmt.Println("Parse config failed")
+	err := golib.ConfigFile("test.ini", "Config", config)
+	if err != nil {
+		fmt.Println("Parse config failed", err)
 		return
 	}
 

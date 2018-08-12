@@ -230,8 +230,9 @@ func confTimeDuration(value string, defaultVal time.Duration) time.Duration {
 //		}
 //
 //		config := &Config{}
-//		if !golib.Config(f, "Config", config) {
-//			fmt.Println("Parse config failed")
+//		err := golib.Config(f, "Config", config)
+//		if err != nil {
+//			fmt.Println("Parse config failed", err)
 //			return
 //		}
 //
@@ -240,7 +241,7 @@ func confTimeDuration(value string, defaultVal time.Duration) time.Duration {
 //
 // Result:
 //	&{true Hello World 100 -100 10M 20s T2}
-func Config(f *ini.File, secName string, it interface{}) bool {
+func Config(f *ini.File, secName string, it interface{}) error {
 	if secName == "DEFAULT" {
 		secName = ""
 	}
@@ -279,11 +280,20 @@ func Config(f *ini.File, secName string, it interface{}) bool {
 			value.SetInt(int64(confTimeDuration(confV,
 				defaultTimeDuration(fd))))
 		default:
-			fmt.Printf("Unsuppoted config, secName: %s, name: %s, type: %s\n",
+			return fmt.Errorf(
+				"Unsuppoted config, secName: %s, name: %s, type: %s\n",
 				secName, fn, ft)
-			return false
 		}
 	}
 
-	return true
+	return nil
+}
+
+func ConfigFile(path string, secName string, it interface{}) error {
+	f, err := ini.Load(path)
+	if err != nil {
+		return err
+	}
+
+	return Config(f, secName, it)
 }

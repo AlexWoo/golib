@@ -39,8 +39,9 @@ func TestConfig(t *testing.T) {
 	}
 
 	config := &Config{}
-	if !golib.Config(f, "Config", config) {
-		t.Error("Parse config failed")
+	err = golib.Config(f, "Config", config)
+	if err != nil {
+		t.Error("Parse config failed:", err)
 		return
 	}
 
@@ -96,14 +97,9 @@ type UnConfig struct {
 }
 
 func TestUnconfig(t *testing.T) {
-	f, err := ini.Load("test/test.ini")
-	if err != nil {
-		t.Error("Load test.ini failed", err)
-		return
-	}
-
 	config := &UnConfig{}
-	if !golib.Config(f, "UnConfig", config) {
+	err := golib.ConfigFile("test/test.ini", "UnConfig", config)
+	if err != nil {
 		t.Error("Parse config failed")
 		return
 	}
@@ -154,15 +150,10 @@ type Unsuppoted struct {
 }
 
 func TestUnsupportedConf(t *testing.T) {
-	f, err := ini.Load("test/test.ini")
-	if err != nil {
-		t.Error("load test.ini failed", err)
-		return
-	}
-
 	config := &Unsuppoted{}
-	if !golib.Config(f, "Unsuppoted", config) {
-		t.Error("parse config failed")
+	err := golib.ConfigFile("test/test.ini", "Unsuppoted", config)
+	if err != nil {
+		t.Error("parse config failed", err)
 		return
 	}
 
@@ -181,7 +172,8 @@ func TestUnsupportedType(t *testing.T) {
 	}
 
 	config := &UnsuppotedType{}
-	if !golib.Config(f, "UnsuppotedType", config) {
+	err = golib.Config(f, "UnsuppotedType", config)
+	if err != nil {
 		fmt.Println("parse config failed")
 		return
 	}
