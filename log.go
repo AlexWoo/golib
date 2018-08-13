@@ -34,8 +34,14 @@ var LoglvEnum = Enum{
 
 // LogCtx for user defined prefix and suffix add in log
 type LogCtx interface {
+	// Log Prefix
 	Prefix() string
+
+	// Log Suffix
 	Suffix() string
+
+	// Log Level
+	LogLevel() int
 }
 
 // golib log struct
@@ -53,9 +59,13 @@ type LogCtx interface {
 //		return "[END]"
 //	}
 //
+//	func (h *mainCtx) LogLevel() int {
+//		return golib.LOGINFO
+//	}
+//
 //	func main() {
 //		h := &mainCtx{}
-//		logger := golib.NewLog("test.log", golib.LOGINFO)
+//		logger := golib.NewLog("test.log")
 //		if logger == nil {
 //			fmt.Println("NewLog failed")
 //		}
@@ -75,7 +85,6 @@ type LogCtx interface {
 //	2018/07/11 08:30:14.671884 [fatal] [main] test fatal [END]
 type Log struct {
 	path   string
-	level  int
 	logger *log.Logger
 }
 
@@ -96,7 +105,7 @@ func (l *Log) logPrintf(loglv int, c LogCtx, format string, v ...interface{}) {
 }
 
 // New golib log instance
-func NewLog(logPath string, logLevel int) *Log {
+func NewLog(logPath string) *Log {
 	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		return nil
@@ -104,7 +113,6 @@ func NewLog(logPath string, logLevel int) *Log {
 
 	l := &Log{
 		path:   logPath,
-		level:  logLevel,
 		logger: log.New(f, "", log.LstdFlags|log.Lmicroseconds|log.LUTC),
 	}
 
@@ -118,7 +126,7 @@ func (l *Log) LogPath() string {
 
 // log a debug level log
 func (l *Log) LogDebug(c LogCtx, format string, v ...interface{}) {
-	if l.level > LOGDEBUG {
+	if c.LogLevel() > LOGDEBUG {
 		return
 	}
 
@@ -127,7 +135,7 @@ func (l *Log) LogDebug(c LogCtx, format string, v ...interface{}) {
 
 // log a info level log
 func (l *Log) LogInfo(c LogCtx, format string, v ...interface{}) {
-	if l.level > LOGINFO {
+	if c.LogLevel() > LOGINFO {
 		return
 	}
 
@@ -136,7 +144,7 @@ func (l *Log) LogInfo(c LogCtx, format string, v ...interface{}) {
 
 // log a error level log
 func (l *Log) LogError(c LogCtx, format string, v ...interface{}) {
-	if l.level > LOGERROR {
+	if c.LogLevel() > LOGERROR {
 		return
 	}
 

@@ -40,9 +40,9 @@ func recv(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	logger := golib.NewLog("server.log", golib.LOGINFO)
+	logger := golib.NewLog("server.log")
 
-	conn := golib.NewWSServer("a", c, 1024, handler, logger)
+	conn := golib.NewWSServer("a", c, 1024, handler, logger, golib.LOGINFO)
 	if conns["a"] == nil {
 		go send(conn)
 		conns["a"] = conn

@@ -19,10 +19,10 @@ func handler(c golib.Conn, data []byte) {
 }
 
 func main() {
-	logger := golib.NewLog("client.log", golib.LOGINFO)
+	logger := golib.NewLog("client.log")
 
 	conn := golib.NewWSClient("a", "ws://127.0.0.1:8080", 3*time.Second, 3,
-		1024, handler, logger)
+		1024, handler, logger, golib.LOGINFO)
 	if conn == nil {
 		return
 	}

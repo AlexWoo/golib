@@ -22,6 +22,7 @@ type Conn interface {
 	// for log ctx
 	Prefix() string
 	Suffix() string
+	LogLevel() int
 }
 
 // Webscoket Connection, support websocket channel reuse with same name,
@@ -38,6 +39,7 @@ type WSConn struct {
 	quit        chan bool
 	buf         []byte
 	log         *Log
+	logLevel    int
 	handler     func(c Conn, data []byte)
 }
 
@@ -190,9 +192,11 @@ func (c *WSConn) dial() {
 // maxRetries is max times to try if websocket client connect to server failed.
 // qsize is send and receive channel size.
 // handler is callback function when websocket client receive data
+// log is log instance to logger
+// logLevel is log level to write log
 func NewWSClient(name string, url string, connTimeout time.Duration,
 	maxRetries int, qsize uint64, handler func(c Conn, data []byte),
-	log *Log) *WSConn {
+	log *Log, logLevel int) *WSConn {
 
 	if !strings.HasPrefix(url, "ws://") && !strings.HasPrefix(url, "wss://") {
 		return nil
@@ -216,6 +220,7 @@ func NewWSClient(name string, url string, connTimeout time.Duration,
 		reconnect:   make(chan bool),
 		quit:        make(chan bool, 1),
 		log:         log,
+		logLevel:    logLevel,
 		handler:     handler,
 	}
 	wsconns[name] = conn
@@ -232,8 +237,10 @@ func NewWSClient(name string, url string, connTimeout time.Duration,
 // c is websocket.Conn instance bind with websocket server.
 // qsize is send and receive channel size.
 // handler is callback function when websocket server receive data
+// log is log instance to logger
+// logLevel is log level to write log
 func NewWSServer(name string, c *websocket.Conn, qsize uint64,
-	handler func(c Conn, data []byte), log *Log) *WSConn {
+	handler func(c Conn, data []byte), log *Log, logLevel int) *WSConn {
 
 	wsconnsLock.Lock()
 
@@ -249,6 +256,7 @@ func NewWSServer(name string, c *websocket.Conn, qsize uint64,
 			reconnect: make(chan bool),
 			quit:      make(chan bool, 1),
 			log:       log,
+			logLevel:  logLevel,
 			handler:   handler,
 		}
 		wsconns[name] = conn
@@ -296,12 +304,21 @@ func (c *WSConn) Prefix() string {
 func (c *WSConn) Suffix() string {
 	suf := ", Websocket[" + c.name + "]"
 	if c.url != "" { // websocket client
-		suf += " Url: " + c.url + " Client: " + c.conn.LocalAddr().String() +
-			" Server: " + c.conn.RemoteAddr().String()
+		suf += " Url: " + c.url
+		if c.conn != nil {
+			suf += " Client: " + c.conn.LocalAddr().String() +
+				" Server: " + c.conn.RemoteAddr().String()
+		}
 	} else {
-		suf += " Client: " + c.conn.RemoteAddr().String() +
-			" Server: " + c.conn.LocalAddr().String()
+		if c.conn != nil {
+			suf += " Client: " + c.conn.RemoteAddr().String() +
+				" Server: " + c.conn.LocalAddr().String()
+		}
 	}
 
 	return suf
+}
+
+func (c *WSConn) LogLevel() int {
+	return c.logLevel
 }

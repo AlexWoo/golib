@@ -16,9 +16,13 @@ func (h *mainCtx) Suffix() string {
 	return "[END]"
 }
 
+func (h *mainCtx) LogLevel() int {
+	return golib.LOGINFO
+}
+
 func main() {
 	h := &mainCtx{}
-	logger := golib.NewLog("test.log", golib.LOGINFO)
+	logger := golib.NewLog("test.log")
 	if logger == nil {
 		fmt.Println(h, "NewLog failed")
 	}
