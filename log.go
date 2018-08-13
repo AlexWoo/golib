@@ -111,6 +111,11 @@ func NewLog(logPath string, logLevel int) *Log {
 	return l
 }
 
+// Return Log Path
+func (l *Log) LogPath() string {
+	return l.path
+}
+
 // log a debug level log
 func (l *Log) LogDebug(c LogCtx, format string, v ...interface{}) {
 	if l.level > LOGDEBUG {
