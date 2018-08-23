@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -106,6 +107,7 @@ type HTTPServer struct {
 	server   *http.Server
 	handle   func(w http.ResponseWriter, req *http.Request)
 
+	tls      bool
 	certfile string
 	keyfile  string
 
@@ -133,8 +135,23 @@ func NewHTTPServer(addr string, cert string, key string, location string,
 			ErrorLog:          log.logger,
 		},
 		handle:   handle,
+		tls:      false,
 		certfile: cert,
 		keyfile:  key,
+	}
+
+	if cert != "" || key != "" {
+		s.tls = true
+
+		_, err := os.Stat(cert)
+		if err != nil {
+			return nil, fmt.Errorf("TLS certfication(%s) error: %s", cert, err)
+		}
+
+		_, err = os.Stat(key)
+		if err != nil {
+			return nil, fmt.Errorf("TLS key(%s) error: %s", key, err)
+		}
 	}
 
 	s.serveMux.HandleFunc(location, s.handler)
