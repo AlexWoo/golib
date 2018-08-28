@@ -37,7 +37,8 @@ type Module interface {
 }
 
 type modulectx struct {
-	m Module
+	m     Module
+	timer *Timer
 }
 
 // Module manage
@@ -142,15 +143,27 @@ func (ms *Modules) preMainloop() {
 	}
 }
 
+func (ms *Modules) close(name string) {
+	ms.nModule--
+	ms.closeModule <- name
+}
+
 func (ms *Modules) wrap(name string) {
 	err := ms.modules[name].m.Mainloop()
 	if err != nil {
 		log.Println("module", name, "mainloop error", err)
 	}
 
-	log.Println("module", name, "exit")
-	ms.nModule--
-	ms.closeModule <- name
+	t := ms.modules[name].timer
+	if t != nil {
+		t.Stop()
+	}
+
+	ms.close(name)
+}
+
+func (ms *Modules) closeTimeout(n interface{}) {
+	ms.close(n.(string))
 }
 
 func (ms *Modules) mainloop() {
@@ -158,7 +171,6 @@ func (ms *Modules) mainloop() {
 		go ms.wrap(name)
 	}
 
-	var t time.Timer
 	exit := false
 
 	for {
@@ -176,7 +188,6 @@ func (ms *Modules) mainloop() {
 
 			switch s {
 			case syscall.SIGINT, syscall.SIGQUIT:
-				t := time.NewTimer(5 * time.Second)
 				ms.exit()
 			case syscall.SIGTERM:
 				exit = true
@@ -187,8 +198,6 @@ func (ms *Modules) mainloop() {
 			}
 		case <-ms.closeModule:
 			break
-		case <-t.C:
-			exit = true
 		}
 	}
 
@@ -214,7 +223,8 @@ func (ms *Modules) reopen() {
 }
 
 func (ms *Modules) exit() {
-	for _, mctx := range ms.modules {
+	for name, mctx := range ms.modules {
+		mctx.timer = NewTimer(5*time.Second, ms.closeTimeout, name)
 		mctx.m.Exit()
 	}
 }

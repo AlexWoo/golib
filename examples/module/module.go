@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"golib"
+	"log"
 	"net/http"
 	"time"
 )
@@ -52,7 +52,9 @@ func (m *HTTPServerModule) PreMainloop() error {
 
 func (m *HTTPServerModule) Mainloop() error {
 	err := m.server.Start()
-	fmt.Println(err)
+	log.Println("before sleep", err)
+	time.Sleep(10 * time.Second)
+	log.Println("after sleep")
 
 	return err
 }
