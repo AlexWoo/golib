@@ -124,6 +124,11 @@ func (l *Log) LogPath() string {
 	return l.path
 }
 
+// Return *log.Logger
+func (l *Log) Log() *log.Logger {
+	return l.logger
+}
+
 // log a debug level log
 func (l *Log) LogDebug(c LogCtx, format string, v ...interface{}) {
 	if c.LogLevel() > LOGDEBUG {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"golib"
-	"log"
 	"net/http"
 	"time"
 )
@@ -18,6 +17,8 @@ type HTTPServerModule struct {
 	server *golib.HTTPServer
 }
 
+var ms *golib.Modules
+
 func (m *HTTPServerModule) handle(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	w.Write([]byte("Hello World"))
@@ -30,6 +31,8 @@ func (m *HTTPServerModule) PreInit() error {
 	m.keepalived = 60 * time.Second
 	m.accesslog = "access.log"
 	m.log = golib.NewLog("error.log")
+
+	ms.SetLog(m.log.Log())
 
 	return nil
 }
@@ -52,9 +55,9 @@ func (m *HTTPServerModule) PreMainloop() error {
 
 func (m *HTTPServerModule) Mainloop() error {
 	err := m.server.Start()
-	log.Println("before sleep", err)
-	time.Sleep(10 * time.Second)
-	log.Println("after sleep")
+	//log.Println("before sleep", err)
+	//time.Sleep(10 * time.Second)
+	//log.Println("after sleep")
 
 	return err
 }
@@ -72,7 +75,7 @@ func (m *HTTPServerModule) Exit() {
 }
 
 func main() {
-	ms := golib.NewModules()
+	ms = golib.NewModules()
 
 	ms.AddModule("httpserver", &HTTPServerModule{})
 

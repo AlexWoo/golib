@@ -52,6 +52,9 @@ type Modules struct {
 
 	// Signals
 	signals chan os.Signal
+
+	// log
+	log *log.Logger
 }
 
 var modules *Modules
@@ -66,6 +69,7 @@ func NewModules() *Modules {
 		modules:     make(map[string]*modulectx),
 		closeModule: make(chan string),
 		signals:     make(chan os.Signal),
+		log:         log.New(os.Stderr, "", log.LstdFlags),
 	}
 
 	return modules
@@ -84,13 +88,22 @@ func (ms *Modules) AddModule(name string, m Module) {
 
 // Start module system
 func (ms *Modules) Start() {
+	ms.log.Println("start system ...")
 	ms.preInit()
 
+	ms.log.Println("init ...")
 	ms.init()
 
+	ms.log.Println("pre mainloop ...")
 	ms.preMainloop()
 
+	ms.log.Println("mainloop ...")
 	ms.mainloop()
+}
+
+// Set log
+func (ms *Modules) SetLog(log *log.Logger) {
+	ms.log = log
 }
 
 func (ms *Modules) preInit() {
@@ -114,10 +127,10 @@ func (ms *Modules) preInit() {
 	for _, name := range ms.callseq {
 		err := ms.modules[name].m.PreInit()
 		if err != nil {
-			log.Fatal("module", name, "pre init error", err)
+			ms.log.Fatal("module", name, "pre init error", err)
 		}
 
-		log.Println("module", name, "pre init successd")
+		ms.log.Println("module", name, "pre init successd")
 	}
 }
 
@@ -125,10 +138,10 @@ func (ms *Modules) init() {
 	for _, name := range ms.callseq {
 		err := ms.modules[name].m.Init()
 		if err != nil {
-			log.Fatal("module", name, "init error", err)
+			ms.log.Fatal("module", name, "init error", err)
 		}
 
-		log.Println("module", name, "init successd")
+		ms.log.Println("module", name, "init successd")
 	}
 }
 
@@ -136,10 +149,10 @@ func (ms *Modules) preMainloop() {
 	for _, name := range ms.callseq {
 		err := ms.modules[name].m.PreMainloop()
 		if err != nil {
-			log.Fatal("module", name, "pre mainloop error", err)
+			ms.log.Fatal("module", name, "pre mainloop error", err)
 		}
 
-		log.Println("module", name, "pre mainloop successd")
+		ms.log.Println("module", name, "pre mainloop successd")
 	}
 }
 
@@ -151,7 +164,7 @@ func (ms *Modules) close(name string) {
 func (ms *Modules) wrap(name string) {
 	err := ms.modules[name].m.Mainloop()
 	if err != nil {
-		log.Println("module", name, "mainloop error", err)
+		ms.log.Println("module", name, "mainloop error", err)
 	}
 
 	t := ms.modules[name].timer
@@ -184,7 +197,7 @@ func (ms *Modules) mainloop() {
 
 		select {
 		case s := <-ms.signals:
-			log.Println("get signal:", s)
+			ms.log.Println("get signal:", s)
 
 			switch s {
 			case syscall.SIGINT, syscall.SIGQUIT:
@@ -201,28 +214,34 @@ func (ms *Modules) mainloop() {
 		}
 	}
 
-	log.Println("system exit")
+	ms.log.Println("system exit")
 }
 
 func (ms *Modules) reload() {
+	ms.log.Println("reload ...")
+
 	for name, mctx := range ms.modules {
 		err := mctx.m.Reload()
 		if err != nil {
-			log.Println("module", name, "reload error", err)
+			ms.log.Println("module", name, "reload error", err)
 		}
 	}
 }
 
 func (ms *Modules) reopen() {
+	ms.log.Println("reopen ...")
+
 	for name, mctx := range ms.modules {
 		err := mctx.m.Reopen()
 		if err != nil {
-			log.Println("module", name, "reopen error", err)
+			ms.log.Println("module", name, "reopen error", err)
 		}
 	}
 }
 
 func (ms *Modules) exit() {
+	ms.log.Println("exiting ...")
+
 	for name, mctx := range ms.modules {
 		mctx.timer = NewTimer(5*time.Second, ms.closeTimeout, name)
 		mctx.m.Exit()
