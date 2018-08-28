@@ -18,8 +18,8 @@ func handle(w http.ResponseWriter, r *http.Request) {
 func main() {
 	logger := golib.NewLog("error.log")
 
-	s, err := golib.NewHTTPServer(":8080", "test.cert", "test.key", "/", 10*time.Second,
-		60*time.Second, logger, handle, "access.log")
+	s, err := golib.NewHTTPServer(":8080", "test.cert", "test.key", "/",
+		10*time.Second, 60*time.Second, logger, handle, "access.log")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
