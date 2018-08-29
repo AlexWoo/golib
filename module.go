@@ -24,7 +24,7 @@ type Module interface {
 	PreMainloop() error
 
 	// Run mainloop
-	Mainloop() error
+	Mainloop()
 
 	// Reload Config. Notice: not all config can be reload
 	Reload() error
@@ -162,10 +162,7 @@ func (ms *Modules) close(name string) {
 }
 
 func (ms *Modules) wrap(name string) {
-	err := ms.modules[name].m.Mainloop()
-	if err != nil {
-		ms.log.Println("module", name, "mainloop error", err)
-	}
+	ms.modules[name].m.Mainloop()
 
 	t := ms.modules[name].timer
 	if t != nil {

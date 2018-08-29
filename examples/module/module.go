@@ -53,13 +53,11 @@ func (m *HTTPServerModule) PreMainloop() error {
 	return nil
 }
 
-func (m *HTTPServerModule) Mainloop() error {
-	err := m.server.Start()
+func (m *HTTPServerModule) Mainloop() {
+	m.server.Start()
 	//log.Println("before sleep", err)
 	//time.Sleep(10 * time.Second)
 	//log.Println("after sleep")
-
-	return err
 }
 
 func (m *HTTPServerModule) Reload() error {
