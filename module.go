@@ -127,7 +127,7 @@ func (ms *Modules) preInit() {
 	for _, name := range ms.callseq {
 		err := ms.modules[name].m.PreInit()
 		if err != nil {
-			ms.log.Fatal("module", name, "pre init error", err)
+			ms.log.Fatalln("module", name, "pre init error", err)
 		}
 
 		ms.log.Println("module", name, "pre init successd")
@@ -138,7 +138,7 @@ func (ms *Modules) init() {
 	for _, name := range ms.callseq {
 		err := ms.modules[name].m.Init()
 		if err != nil {
-			ms.log.Fatal("module", name, "init error", err)
+			ms.log.Fatalln("module", name, "init error", err)
 		}
 
 		ms.log.Println("module", name, "init successd")
@@ -149,7 +149,7 @@ func (ms *Modules) preMainloop() {
 	for _, name := range ms.callseq {
 		err := ms.modules[name].m.PreMainloop()
 		if err != nil {
-			ms.log.Fatal("module", name, "pre mainloop error", err)
+			ms.log.Fatalln("module", name, "pre mainloop error", err)
 		}
 
 		ms.log.Println("module", name, "pre mainloop successd")
