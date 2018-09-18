@@ -1,0 +1,9 @@
+{
+    "cbool": true,
+    "cstring": "Hello World",
+    "cuint64": 100,
+    "cint64": -100,
+    "csize": "10M",
+    "cduration": "20s",
+    "cenum": "T1"
+}
