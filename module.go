@@ -88,8 +88,8 @@ func (ms *Modules) AddModule(name string, m Module) {
 
 // Start module system
 func (ms *Modules) Start() {
-	ms.log.Println("start system ...")
 	ms.preInit()
+	ms.log.Println("start system ...")
 
 	ms.log.Println("init ...")
 	ms.init()
