@@ -40,7 +40,7 @@ func Reload(name string) error {
 		for n, r := range reloaderm {
 			err := r.Reload()
 			if err != nil {
-				return fmt.Errorf("Reload %s failed, %V", n, err)
+				return fmt.Errorf("Reload %s failed, %s", n, err.Error())
 			}
 		}
 
