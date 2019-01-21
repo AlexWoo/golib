@@ -7,6 +7,7 @@ package golib
 import (
 	"log"
 	"os"
+	"sync"
 )
 
 // log level const definition
@@ -31,6 +32,12 @@ var LoglvEnum = Enum{
 	"error": LOGERROR,
 	"fatal": LOGFATAL,
 }
+
+// use log file path as index, if Open same file, will reuse Log instance
+var (
+	logm     = make(map[string]*Log)
+	logmLock sync.Mutex
+)
 
 // LogCtx for user defined prefix and suffix add in log
 type LogCtx interface {
@@ -106,6 +113,14 @@ func (l *Log) logPrintf(loglv int, c LogCtx, format string, v ...interface{}) {
 
 // New golib log instance
 func NewLog(logPath string) *Log {
+	logmLock.Lock()
+	defer logmLock.Unlock()
+
+	reuselog := logm[logPath]
+	if reuselog != nil {
+		return reuselog
+	}
+
 	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		return nil
@@ -116,7 +131,27 @@ func NewLog(logPath string) *Log {
 		logger: log.New(f, "", log.LstdFlags|log.Lmicroseconds|log.LUTC),
 	}
 
+	logm[logPath] = l
+
 	return l
+}
+
+// Reopen all logfiles use golib.NewLog to create
+func ReopenLogs() error {
+	logmLock.Lock()
+	defer logmLock.Unlock()
+
+	for _, l := range logm {
+		f, err := os.OpenFile(l.path,
+			os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			return err
+		}
+
+		l.logger = log.New(f, "", log.LstdFlags|log.Lmicroseconds|log.LUTC)
+	}
+
+	return nil
 }
 
 // Return Log Path
