@@ -5,6 +5,7 @@
 package golib
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -137,15 +138,14 @@ func NewLog(logPath string) *Log {
 }
 
 // Reopen all logfiles use golib.NewLog to create
-func ReopenLogs() error {
+func reopenLogs() error {
 	logmLock.Lock()
 	defer logmLock.Unlock()
 
 	for _, l := range logm {
-		f, err := os.OpenFile(l.path,
-			os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		f, err := os.OpenFile(l.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if err != nil {
-			return err
+			return fmt.Errorf("reopen log failed %s", err.Error())
 		}
 
 		l.logger = log.New(f, "", log.LstdFlags|log.Lmicroseconds|log.LUTC)

@@ -15,6 +15,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -111,7 +112,26 @@ type HTTPServer struct {
 	certfile string
 	keyfile  string
 
+	logpath   string
 	accesslog *os.File
+}
+
+var (
+	serverm     = make([]*HTTPServer, 0)
+	servermLock sync.Mutex
+)
+
+func reopenHTTPServer() error {
+	servermLock.Lock()
+	defer servermLock.Unlock()
+
+	for _, s := range serverm {
+		if err := s.openAccesslog(); err != nil {
+			return fmt.Errorf("reopen HTTP Server failed %s", err.Error())
+		}
+	}
+
+	return nil
 }
 
 // New a HTTP Server
@@ -138,6 +158,7 @@ func NewHTTPServer(addr string, cert string, key string, location string,
 		tls:      false,
 		certfile: cert,
 		keyfile:  key,
+		logpath:  accesslog,
 	}
 
 	if cert != "" || key != "" {
@@ -157,13 +178,26 @@ func NewHTTPServer(addr string, cert string, key string, location string,
 	s.serveMux.HandleFunc(location, s.handler)
 	s.server.Handler = s.serveMux
 
-	al, err := os.OpenFile(accesslog, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-	if err != nil {
+	if err := s.openAccesslog(); err != nil {
 		return nil, err
+	}
+
+	servermLock.Lock()
+	defer servermLock.Unlock()
+
+	serverm = append(serverm, s)
+
+	return s, nil
+}
+
+func (s *HTTPServer) openAccesslog() error {
+	al, err := os.OpenFile(s.logpath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return err
 	}
 	s.accesslog = al
 
-	return s, nil
+	return nil
 }
 
 // record access log

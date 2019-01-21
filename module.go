@@ -5,7 +5,6 @@
 package golib
 
 import (
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -25,12 +24,6 @@ type Module interface {
 
 	// Run mainloop
 	Mainloop()
-
-	// Reload Config. Notice: not all config can be reload
-	Reload() error
-
-	// ReOpen logs for logrotate
-	Reopen() error
 
 	// Exit mainloop
 	Exit()
@@ -54,7 +47,8 @@ type Modules struct {
 	signals chan os.Signal
 
 	// log
-	log *log.Logger
+	log      *Log
+	loglevel int
 }
 
 var modules *Modules
@@ -69,7 +63,6 @@ func NewModules() *Modules {
 		modules:     make(map[string]*modulectx),
 		closeModule: make(chan string),
 		signals:     make(chan os.Signal),
-		log:         log.New(os.Stderr, "", log.LstdFlags),
 	}
 
 	return modules
@@ -86,27 +79,40 @@ func (ms *Modules) AddModule(name string, m Module) {
 	ms.nModule++
 }
 
+func (ms *Modules) Prefix() string {
+	return ""
+}
+
+func (ms *Modules) Suffix() string {
+	return ""
+}
+
+func (ms *Modules) LogLevel() int {
+	return ms.loglevel
+}
+
 // Start module system
 func (ms *Modules) Start() {
 	ms.preInit()
-	ms.log.Println("start system ...")
+	ms.log.LogError(ms, "start system ...")
 
-	ms.log.Println("init ...")
+	ms.log.LogInfo(ms, "init ...")
 	ms.init()
 
-	ms.log.Println("pre mainloop ...")
+	ms.log.LogInfo(ms, "pre mainloop ...")
 	ms.preMainloop()
 
-	ms.log.Println("mainloop ...")
+	ms.log.LogInfo(ms, "mainloop ...")
 	ms.mainloop()
 }
 
 // Set log
-func (ms *Modules) SetLog(log *log.Logger) {
-	ms.log = log
+func (ms *Modules) SetLog(log string, loglevel int) {
+	ms.log = NewLog(log)
+	ms.loglevel = loglevel
 }
 
-func (ms *Modules) preInit() {
+func (ms *Modules) preInit() error {
 	// init signals
 	// quit gracefully
 	signal.Notify(ms.signals, syscall.SIGQUIT, syscall.SIGINT)
@@ -127,21 +133,25 @@ func (ms *Modules) preInit() {
 	for _, name := range ms.callseq {
 		err := ms.modules[name].m.PreInit()
 		if err != nil {
-			ms.log.Fatalln("module", name, "pre init error", err)
+			return err
 		}
-
-		ms.log.Println("module", name, "pre init successd")
 	}
+
+	if ms.log == nil {
+		ms.SetLog("error.log", LOGINFO)
+	}
+
+	return nil
 }
 
 func (ms *Modules) init() {
 	for _, name := range ms.callseq {
 		err := ms.modules[name].m.Init()
 		if err != nil {
-			ms.log.Fatalln("module", name, "init error", err)
+			ms.log.LogFatal(ms, "module %s init error %s", name, err.Error())
 		}
 
-		ms.log.Println("module", name, "init successd")
+		ms.log.LogInfo(ms, "module %s init successd", name)
 	}
 }
 
@@ -149,10 +159,11 @@ func (ms *Modules) preMainloop() {
 	for _, name := range ms.callseq {
 		err := ms.modules[name].m.PreMainloop()
 		if err != nil {
-			ms.log.Fatalln("module", name, "pre mainloop error", err)
+			ms.log.LogFatal(ms, "module %s pre mainloop error %s",
+				name, err.Error())
 		}
 
-		ms.log.Println("module", name, "pre mainloop successd")
+		ms.log.LogInfo(ms, "module %s pre mainloop successd", name)
 	}
 }
 
@@ -194,7 +205,7 @@ func (ms *Modules) mainloop() {
 
 		select {
 		case s := <-ms.signals:
-			ms.log.Println("get signal:", s)
+			ms.log.LogInfo(ms, "get signal: %s", s.String())
 
 			switch s {
 			case syscall.SIGINT, syscall.SIGQUIT:
@@ -211,33 +222,31 @@ func (ms *Modules) mainloop() {
 		}
 	}
 
-	ms.log.Println("system exit")
+	ms.log.LogError(ms, "system exit")
 }
 
 func (ms *Modules) reload() {
-	ms.log.Println("reload ...")
+	ms.log.LogInfo(ms, "reload ...")
 
-	for name, mctx := range ms.modules {
-		err := mctx.m.Reload()
-		if err != nil {
-			ms.log.Println("module", name, "reload error", err)
-		}
+	if err := Reload(""); err != nil {
+		ms.log.LogError(ms, "reload failed: %s", err.Error())
 	}
 }
 
 func (ms *Modules) reopen() {
-	ms.log.Println("reopen ...")
+	ms.log.LogInfo(ms, "reopen ...")
 
-	for name, mctx := range ms.modules {
-		err := mctx.m.Reopen()
-		if err != nil {
-			ms.log.Println("module", name, "reopen error", err)
-		}
+	if err := reopenLogs(); err != nil {
+		ms.log.LogError(ms, "%s", err.Error())
+	}
+
+	if err := reopenHTTPServer(); err != nil {
+		ms.log.LogError(ms, "%s", err.Error())
 	}
 }
 
 func (ms *Modules) exit() {
-	ms.log.Println("exiting ...")
+	ms.log.LogError(ms, "exiting ...")
 
 	for name, mctx := range ms.modules {
 		mctx.timer = NewTimer(5*time.Second, ms.closeTimeout, name)

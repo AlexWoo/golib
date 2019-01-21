@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"golib"
 	"net/http"
 	"time"
@@ -32,7 +33,7 @@ func (m *HTTPServerModule) PreInit() error {
 	m.accesslog = "access.log"
 	m.log = golib.NewLog("error.log")
 
-	ms.SetLog(m.log.Log())
+	ms.SetLog("error.log", golib.LOGINFO)
 
 	return nil
 }
@@ -46,6 +47,8 @@ func (m *HTTPServerModule) Init() error {
 
 	m.server = s
 
+	golib.AddReloader("HTTPServer", m)
+
 	return nil
 }
 
@@ -54,18 +57,16 @@ func (m *HTTPServerModule) PreMainloop() error {
 }
 
 func (m *HTTPServerModule) Mainloop() {
-	m.server.Start()
+	err := m.server.Start()
+	fmt.Printf("HTTPServer Stop %V", err)
 	//log.Println("before sleep", err)
 	//time.Sleep(10 * time.Second)
 	//log.Println("after sleep")
 }
 
 func (m *HTTPServerModule) Reload() error {
-	return nil
-}
-
-func (m *HTTPServerModule) Reopen() error {
-	return nil
+	fmt.Println("HTTP Server Reload")
+	return fmt.Errorf("test error")
 }
 
 func (m *HTTPServerModule) Exit() {
