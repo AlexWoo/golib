@@ -68,6 +68,8 @@ func reopenfileLogs() error {
 			return fmt.Errorf("reopen logfile failed %s", err.Error())
 		}
 
+		lf.file.Close()
+
 		lf.file = f
 	}
 

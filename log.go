@@ -94,6 +94,7 @@ type LogCtx interface {
 type Log struct {
 	path   string
 	logger *log.Logger
+	file   *os.File
 }
 
 func (l *Log) logPrintf(loglv int, c LogCtx, format string, v ...interface{}) {
@@ -130,6 +131,7 @@ func NewLog(logPath string) *Log {
 	l := &Log{
 		path:   logPath,
 		logger: log.New(f, "", log.LstdFlags|log.Lmicroseconds),
+		file:   f,
 	}
 
 	logm[logPath] = l
@@ -148,6 +150,9 @@ func reopenLogs() error {
 			return fmt.Errorf("reopen log failed %s", err.Error())
 		}
 
+		l.file.Close()
+
+		l.file = f
 		l.logger = log.New(f, "", log.LstdFlags|log.Lmicroseconds)
 	}
 
