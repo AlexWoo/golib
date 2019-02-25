@@ -129,7 +129,7 @@ func NewLog(logPath string) *Log {
 
 	l := &Log{
 		path:   logPath,
-		logger: log.New(f, "", log.LstdFlags|log.Lmicroseconds|log.LUTC),
+		logger: log.New(f, "", log.LstdFlags|log.Lmicroseconds),
 	}
 
 	logm[logPath] = l
@@ -148,7 +148,7 @@ func reopenLogs() error {
 			return fmt.Errorf("reopen log failed %s", err.Error())
 		}
 
-		l.logger = log.New(f, "", log.LstdFlags|log.Lmicroseconds|log.LUTC)
+		l.logger = log.New(f, "", log.LstdFlags|log.Lmicroseconds)
 	}
 
 	return nil
