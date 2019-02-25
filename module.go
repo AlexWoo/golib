@@ -240,7 +240,7 @@ func (ms *Modules) reopen() {
 		ms.log.LogError(ms, "%s", err.Error())
 	}
 
-	if err := reopenHTTPServer(); err != nil {
+	if err := reopenfileLogs(); err != nil {
 		ms.log.LogError(ms, "%s", err.Error())
 	}
 }
